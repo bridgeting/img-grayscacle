@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+</head>
+
+<body>
+    <input type="file" id="file" accept="image/*">
+</body>
+<script>
+    const ele = document.getElementById('file');
+    const reader = new FileReader();
+    const img = new Image();
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    let imgName;
+
+    ele.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file.type.indexOf("image") == 0) {
+            reader.readAsDataURL(file);
+            imgName = file.name.split('.')[0];
+        }
+    })
+
+    reader.onload = (e) => {
+        img.src = e.target.result;
+    }
+
+    img.onload = function() {
+        const imgWidth = this.width;
+        const imgHeight = this.height;
+        canvas.width = imgWidth;
+        canvas.height = imgHeight;
+        context.clearRect(0, 0, imgWidth, imgHeight);
+        context.drawImage(img, 0, 0);
+        const imgData = context.getImageData(0, 0, imgWidth, imgHeight);
+        grayScale(imgData);
+    }
+
+    function grayScale(imgData) {
+        const { width, height, data } = imgData;
+        for (let i = 0; i < width * height * 4; i += 4) {
+            const [r, g, b, a] = [data[i], data[i + 1], data[i + 2], data[i + 3]];
+            const v = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+            data.set([v, v, v, a].map(v => v), i);
+        }
+        context.putImageData(imgData, 0, 0);
+        const url = canvas.toDataURL('image/png');
+        download(url);
+    }
+
+    function download(url) {
+        const a = document.createElement('a');
+        const event = new MouseEvent('click');
+        a.download = imgName ? `${imgName}-grayscale` : 'grayscale';
+        a.href = url;
+        a.dispatchEvent(event);
+    }
+
+</script>
+
+</html>
